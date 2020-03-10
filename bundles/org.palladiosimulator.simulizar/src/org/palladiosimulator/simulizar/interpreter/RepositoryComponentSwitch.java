@@ -37,6 +37,7 @@ import org.palladiosimulator.simulizar.runtimestate.SimulatedBasicComponentInsta
 import org.palladiosimulator.simulizar.runtimestate.SimulatedCompositeComponentInstance;
 import org.palladiosimulator.simulizar.utils.SimulatedStackHelper;
 
+import de.uka.ipd.sdq.simucomframework.variables.exceptions.ValueNotInFrameException;
 import de.uka.ipd.sdq.simucomframework.variables.stackframe.SimulatedStack;
 import de.uka.ipd.sdq.simucomframework.variables.stackframe.SimulatedStackframe;
 
@@ -74,17 +75,28 @@ class RepositoryComponentSwitch extends RepositorySwitch<SimulatedStackframe<Obj
             LOGGER.debug("Entering BasicComponent: " + basicComponent);
         }
 
+        long oldDCID = -1L;
+        try {
+        	oldDCID = (long) this.context.getStack().currentStackFrame().getValue("_dcid");
+        } catch (ValueNotInFrameException e) {
+        	// TODO Auto-generated catch block
+        	e.printStackTrace();
+        }
+        
         // create new stack frame for component parameters
         final SimulatedStack<Object> stack = this.context.getStack();
+        
         final SimulatedStackframe<Object> componentParameterStackFrame = SimulatedStackHelper
                 .createAndPushNewStackFrame(stack,
                         basicComponent.getComponentParameterUsage_ImplementationComponentType(),
                         stack.currentStackFrame());
-
+        this.context.getStack().currentStackFrame().addValue("_dcid", oldDCID);
+        
         // create new stack frame for assembly context component parameters
         SimulatedStackHelper.createAndPushNewStackFrame(stack,
                 this.instanceAssemblyContext.getConfigParameterUsages__AssemblyContext(), componentParameterStackFrame);
-
+        this.context.getStack().currentStackFrame().addValue("_dcid", oldDCID);
+        
         final FQComponentID fqID = this.computeFQComponentID();
         if (!this.context.getRuntimeState().getComponentInstanceRegistry().hasComponentInstance(fqID)) {
             if (LOGGER.isDebugEnabled()) {
@@ -108,6 +120,15 @@ class RepositoryComponentSwitch extends RepositorySwitch<SimulatedStackframe<Obj
          */
         stack.removeStackFrame();
         stack.removeStackFrame();
+        
+        try {
+			stack.currentStackFrame().addValue("_dcid", result.getValue("_dcid"));
+		} catch (ValueNotInFrameException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+        stack.currentStackFrame().addValue("_dependenddcid", oldDCID);
+        result.addValue("_dependenddcid", oldDCID);
 
         return result;
     }
@@ -153,6 +174,13 @@ class RepositoryComponentSwitch extends RepositorySwitch<SimulatedStackframe<Obj
         			EventType.BEGIN, this.context, this.signature, this.instanceAssemblyContext));
 
         final SimulatedStackframe<Object> result = this.doSwitch(providedRole.getProvidingEntity_ProvidedRole());
+        
+        try {
+			result.addValue("_dcid", this.context.getStack().currentStackFrame().getValue("_dcid"));
+		} catch (ValueNotInFrameException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 
         this.context.getAssemblyContextStack().pop();
         

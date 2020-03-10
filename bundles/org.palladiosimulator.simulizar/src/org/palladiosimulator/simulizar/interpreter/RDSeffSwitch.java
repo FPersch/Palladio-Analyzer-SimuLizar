@@ -55,6 +55,7 @@ import de.uka.ipd.sdq.simucomframework.fork.ForkExecutor;
 import de.uka.ipd.sdq.simucomframework.fork.ForkedBehaviourProcess;
 import de.uka.ipd.sdq.simucomframework.variables.StackContext;
 import de.uka.ipd.sdq.simucomframework.variables.converter.NumberConverter;
+import de.uka.ipd.sdq.simucomframework.variables.exceptions.ValueNotInFrameException;
 import de.uka.ipd.sdq.simucomframework.variables.stackframe.SimulatedStackframe;
 
 /**
@@ -146,7 +147,15 @@ class RDSeffSwitch extends SeffSwitch<Object> implements IComposableSwitch {
         if (this.context.getStack().size() != stacksize) {
             throw new PCMModelInterpreterException("Interpreter did not pop all pushed stackframes");
         }
-
+        
+        long currentDcid = -1L;
+        try {
+        	currentDcid = (long) this.context.getStack().currentStackFrame().getValue("_dcid");
+		} catch (ValueNotInFrameException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+    	this.resultStackFrame.addValue("_dcid", currentDcid);
         return this.resultStackFrame;
     }
 
@@ -200,13 +209,30 @@ class RDSeffSwitch extends SeffSwitch<Object> implements IComposableSwitch {
                         this.context, infrastructureCall.getSignature__InfrastructureCall(),
                         infrastructureCall.getRequiredRole__InfrastructureCall());
 
+                long oldDCID = -1L;
+                try {
+                	oldDCID = (long) this.context.getStack().currentStackFrame().getValue("_dcid");
+        		} catch (ValueNotInFrameException e) {
+        			// TODO Auto-generated catch block
+        			e.printStackTrace();
+        		}
+                
                 // create new stack frame for input parameter
                 SimulatedStackHelper.createAndPushNewStackFrame(this.context.getStack(),
                         infrastructureCall.getInputVariableUsages__CallAction());
+                this.context.getStack().currentStackFrame().addValue("_dcid", oldDCID);
                 final AssemblyContext myContext = this.context.getAssemblyContextStack().pop();
                 composedStructureSwitch.doSwitch(myContext);
                 this.context.getAssemblyContextStack().push(myContext);
+                long innerDCID = -1L;
+                try {
+                	innerDCID = (long) this.context.getStack().currentStackFrame().getValue("_dcid");
+        		} catch (ValueNotInFrameException e) {
+        			// TODO Auto-generated catch block
+        			e.printStackTrace();
+        		}
                 this.context.getStack().removeStackFrame();
+                this.context.getStack().currentStackFrame().addValue("_dcid", innerDCID);
             }
         }
     }
@@ -232,7 +258,14 @@ class RDSeffSwitch extends SeffSwitch<Object> implements IComposableSwitch {
     public Object caseExternalCallAction(final ExternalCallAction externalCall) {
         final ComposedStructureInnerSwitch composedStructureSwitch = new ComposedStructureInnerSwitch(this.context,
                 externalCall.getCalledService_ExternalService(), externalCall.getRole_ExternalService());
-
+        
+        long oldDCID = -1L;
+        try {
+        	oldDCID = (long) this.context.getStack().currentStackFrame().getValue("_dcid");
+		} catch (ValueNotInFrameException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
         if (externalCall instanceof DelegatingExternalCallAction) {
             final SimulatedStackframe<Object> currentFrame = this.context.getStack().currentStackFrame();
             final SimulatedStackframe<Object> callFrame = SimulatedStackHelper.createAndPushNewStackFrame(
@@ -243,6 +276,8 @@ class RDSeffSwitch extends SeffSwitch<Object> implements IComposableSwitch {
             SimulatedStackHelper.createAndPushNewStackFrame(this.context.getStack(),
                     externalCall.getInputVariableUsages__CallAction());
         }
+        this.context.getStack().currentStackFrame().addValue("_dcid", oldDCID);
+        
         final AssemblyContext myContext = this.context.getAssemblyContextStack().pop();
         final SimulatedStackframe<Object> outputFrame = composedStructureSwitch.doSwitch(myContext);
         this.context.getAssemblyContextStack().push(myContext);
@@ -250,6 +285,19 @@ class RDSeffSwitch extends SeffSwitch<Object> implements IComposableSwitch {
 
         SimulatedStackHelper.addParameterToStackFrame(outputFrame,
                 externalCall.getReturnVariableUsage__CallReturnAction(), this.context.getStack().currentStackFrame());
+        
+        try {
+        	long outputDcid = (long) outputFrame.getValue("_dcid");
+        	if (oldDCID != outputDcid) {
+        		this.context.getStack().currentStackFrame().addValue("_dcid", outputDcid);
+        		List<Long> dependendDcids = new ArrayList<>();
+        		dependendDcids.add(oldDCID);
+        		this.context.getStack().currentStackFrame().addValue("_dependenddcid", dependendDcids);
+        	}
+        } catch (ValueNotInFrameException e) {
+        	// TODO Auto-generated catch block
+        	e.printStackTrace();
+        }
 
         return SUCCESS;
     }
@@ -368,6 +416,14 @@ class RDSeffSwitch extends SeffSwitch<Object> implements IComposableSwitch {
      */
     @Override
     public Object caseSetVariableAction(final SetVariableAction object) {
+    	long currentDcid = -1L;
+        try {
+        	currentDcid = (long) this.context.getStack().currentStackFrame().getValue("_dcid");
+		} catch (ValueNotInFrameException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+    	this.resultStackFrame.addValue("_dcid", currentDcid);
         SimulatedStackHelper.addParameterToStackFrame(this.context.getStack().currentStackFrame(),
                 object.getLocalVariableUsages_SetVariableAction(), this.resultStackFrame);
         /*
@@ -400,6 +456,17 @@ class RDSeffSwitch extends SeffSwitch<Object> implements IComposableSwitch {
             LOGGER.debug("Process " + this.context.getThread().getId() + " successfully acquired "
                     + acquireAction.getPassiveresource_AcquireAction().getEntityName());
         }
+        
+        //TODO: entfernen, debug code
+        try {
+        	List<Long> list = new ArrayList<>();
+        	list.add((long) this.context.getStack().currentStackFrame().getValue("_dcid"));
+			this.context.getStack().currentStackFrame().addValue("_dependenddcid", list);
+			this.context.getStack().currentStackFrame().addValue("_dcid", this.context.getRuntimeState().getDCIDProvider().getNextId());
+		} catch (ValueNotInFrameException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
         return SUCCESS;
     }
 
@@ -558,12 +625,20 @@ class RDSeffSwitch extends SeffSwitch<Object> implements IComposableSwitch {
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("Interpret loop number " + i + ": " + object);
             }
-
+            
+            long oldDCID = -1L;
+            try {
+            	oldDCID = (long) this.context.getStack().currentStackFrame().getValue("_dcid");
+    		} catch (ValueNotInFrameException e) {
+    			// TODO Auto-generated catch block
+    			e.printStackTrace();
+    		}
+            
             // create new stack frame for value characterizations of inner
             // collection variable
             final SimulatedStackframe<Object> innerVariableStackFrame = this.context.getStack()
                     .createAndPushNewStackFrame(this.context.getStack().currentStackFrame());
-
+            this.context.getStack().currentStackFrame().addValue("_dcid", oldDCID);
             /*
              * evaluate value characterization of inner collection variable, store them on created
              * top most stack frame. Add a . at the end of the parameter name because otherwise if
@@ -597,7 +672,15 @@ class RDSeffSwitch extends SeffSwitch<Object> implements IComposableSwitch {
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("Remove stack frame: " + innerVariableStackFrame);
             }
+            long innerDCID = -1L;
+            try {
+            	innerDCID = (long) this.context.getStack().currentStackFrame().getValue("_dcid");
+    		} catch (ValueNotInFrameException e) {
+    			// TODO Auto-generated catch block
+    			e.printStackTrace();
+    		}
             this.context.getStack().removeStackFrame();
+            this.context.getStack().currentStackFrame().addValue("_dcid", innerDCID);
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("Finished loop number " + i + ": " + object);
             }
