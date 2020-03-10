@@ -19,6 +19,7 @@ import org.palladiosimulator.simulizar.utils.SimulatedStackHelper;
 import org.palladiosimulator.simulizar.utils.TransitionDeterminer;
 
 import de.uka.ipd.sdq.simucomframework.variables.StackContext;
+import de.uka.ipd.sdq.simucomframework.variables.exceptions.ValueNotInFrameException;
 
 /**
  * Switch for Usage Scenario in Usage Model
@@ -35,7 +36,7 @@ public class UsageScenarioSwitch<T> extends UsagemodelSwitch<T> {
 
     private final InterpreterDefaultContext context;
     private final TransitionDeterminer transitionDeterminer;
-
+    
     /**
      * Constructor
      *
@@ -104,15 +105,21 @@ public class UsageScenarioSwitch<T> extends UsagemodelSwitch<T> {
                         entryLevelSystemCall.getOperationSignature__EntryLevelSystemCall(), EventType.BEGIN,
                         this.context));
 
+        long oldDCID = -1L;
+        try {
+        	oldDCID = (long) this.context.getStack().currentStackFrame().getValue("_dcid");
+		} catch (ValueNotInFrameException e) {}
         // create new stack frame for input parameter
         SimulatedStackHelper.createAndPushNewStackFrame(this.context.getStack(),
                 entryLevelSystemCall.getInputParameterUsages_EntryLevelSystemCall());
+        this.context.getStack().currentStackFrame().addValue("_dcid", oldDCID);
         providedDelegationSwitch.doSwitch(entryLevelSystemCall.getProvidedRole_EntryLevelSystemCall());
+        long innerDCID = -1L;
+        try {
+        	innerDCID = (long) this.context.getStack().currentStackFrame().getValue("_dcid");
+		} catch (ValueNotInFrameException e) {}
         this.context.getStack().removeStackFrame();
-
-        this.context.getRuntimeState().getEventNotificationHelper()
-                .firePassedEvent(new ModelElementPassedEvent<EntryLevelSystemCall>(entryLevelSystemCall, EventType.END,
-                        this.context));
+        this.context.getStack().currentStackFrame().addValue("_dcid", innerDCID);
 
         // FIXME We stick to single model elements here even though several would be needed to
         // uniquely identify the measuring point of interest (system + role + signature) [Lehrig]
@@ -120,6 +127,10 @@ public class UsageScenarioSwitch<T> extends UsagemodelSwitch<T> {
                 .firePassedEvent(new ModelElementPassedEvent<OperationSignature>(
                         entryLevelSystemCall.getOperationSignature__EntryLevelSystemCall(), EventType.END,
                         this.context));
+        
+        this.context.getRuntimeState().getEventNotificationHelper()
+        .firePassedEvent(new ModelElementPassedEvent<EntryLevelSystemCall>(entryLevelSystemCall, EventType.END,
+        		this.context));
 
         return super.caseEntryLevelSystemCall(entryLevelSystemCall);
     }
@@ -149,6 +160,7 @@ public class UsageScenarioSwitch<T> extends UsagemodelSwitch<T> {
         // interpret start user action
         for (final AbstractUserAction abstractUserAction : object.getActions_ScenarioBehaviour()) {
             if (abstractUserAction instanceof Start) {
+            	this.context.getStack().currentStackFrame().addValue("_dcid", this.context.getRuntimeState().getDCIDProvider().getNextId());
                 this.doSwitch(abstractUserAction);
                 break;
             }

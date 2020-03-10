@@ -22,7 +22,8 @@ import org.palladiosimulator.runtimemeasurement.RuntimeMeasurementModel;
 import org.palladiosimulator.runtimemeasurement.RuntimeMeasurementPackage;
 import org.palladiosimulator.simulizar.interpreter.EventNotificationHelper;
 import org.palladiosimulator.simulizar.interpreter.InterpreterDefaultContext;
-
+import org.palladiosimulator.simulizar.interpreter.data.DataContextIDProvider;
+import org.palladiosimulator.simulizar.interpreter.data.IDataContextIDProvider;
 import org.palladiosimulator.simulizar.interpreter.listener.BeginReconfigurationEvent;
 import org.palladiosimulator.simulizar.interpreter.listener.EndReconfigurationEvent;
 import org.palladiosimulator.simulizar.interpreter.listener.EventResult;
@@ -81,6 +82,7 @@ public abstract class AbstractSimuLizarRuntimeState {
     protected final UsageEvolverFacade usageEvolverFacade;
 
     private long numberOfContainers = 0;
+    private IDataContextIDProvider dcidProvider;
 
     /**
      * @param configuration
@@ -118,6 +120,7 @@ public abstract class AbstractSimuLizarRuntimeState {
         this.usageEvolverFacade = new UsageEvolverFacade(this);
         this.initializeUsageEvolver();
         this.pcmPartitionManager.startObservingPcmChanges();
+        this.dcidProvider = new DataContextIDProvider();
     }
 
     /**
@@ -314,5 +317,9 @@ public abstract class AbstractSimuLizarRuntimeState {
 
     public UsageEvolverFacade getUsageEvolverFacade() {
         return this.usageEvolverFacade;
+    }
+    
+    public IDataContextIDProvider getDCIDProvider() {
+    	return this.dcidProvider;
     }
 }

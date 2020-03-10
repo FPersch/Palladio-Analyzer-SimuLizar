@@ -27,6 +27,7 @@ import org.palladiosimulator.pcm.usagemodel.EntryLevelSystemCall;
 import org.palladiosimulator.pcm.usagemodel.UsageScenario;
 import org.palladiosimulator.pcm.usagemodel.util.UsagemodelSwitch;
 import org.palladiosimulator.pcmmeasuringpoint.ActiveResourceMeasuringPoint;
+import org.palladiosimulator.pcmmeasuringpoint.AssemblyActionMeasuringPoint;
 import org.palladiosimulator.pcmmeasuringpoint.AssemblyOperationMeasuringPoint;
 import org.palladiosimulator.pcmmeasuringpoint.AssemblyPassiveResourceMeasuringPoint;
 import org.palladiosimulator.pcmmeasuringpoint.EntryLevelSystemCallMeasuringPoint;
@@ -34,6 +35,7 @@ import org.palladiosimulator.pcmmeasuringpoint.ExternalCallActionMeasuringPoint;
 import org.palladiosimulator.pcmmeasuringpoint.ResourceContainerMeasuringPoint;
 import org.palladiosimulator.pcmmeasuringpoint.ResourceEnvironmentMeasuringPoint;
 import org.palladiosimulator.pcmmeasuringpoint.SubSystemOperationMeasuringPoint;
+import org.palladiosimulator.pcmmeasuringpoint.SystemMeasuringPoint;
 import org.palladiosimulator.pcmmeasuringpoint.SystemOperationMeasuringPoint;
 import org.palladiosimulator.pcmmeasuringpoint.UsageScenarioMeasuringPoint;
 import org.palladiosimulator.pcmmeasuringpoint.util.PcmmeasuringpointSwitch;
@@ -92,10 +94,10 @@ public final class MonitorRepositoryUtil {
             if (eobject == null) {
                 eobject = getEObjectFromGeneralMeasuringPoint(mp);
                 if (eobject == null) {
-                    throw new IllegalArgumentException("Could not find EObject for MeasuringPoint \""
-                            + mp.getStringRepresentation() + "\" -- most likely this type of measuring point is "
-                            + "not yet implemented within in getEObjectFromPCMMeasuringPoint "
-                            + "or getEObjectFromGeneralMeasuringPoint methods.");
+                	throw new IllegalArgumentException("Could not find EObject for MeasuringPoint \""
+                			+ mp.getStringRepresentation() + "\" -- most likely this type of measuring point is "
+                			+ "not yet implemented within in getEObjectFromPCMMeasuringPoint "
+                			+ "or getEObjectFromGeneralMeasuringPoint methods.");
                 }
             }
         }
@@ -184,10 +186,20 @@ public final class MonitorRepositoryUtil {
             public EObject caseExternalCallActionMeasuringPoint(final ExternalCallActionMeasuringPoint object) {
                 return object.getExternalCall();
             };
+            
+            @Override
+            public EObject caseSystemMeasuringPoint(final SystemMeasuringPoint object) {
+                return object.getSystem();
+            };
+
+            @Override
+            public EObject caseAssemblyActionMeasuringPoint(final AssemblyActionMeasuringPoint object) {
+                return object.getAction();
+            };
 
         }.doSwitch(measuringPoint);
     }
-
+    
     public static List<Monitor> getActiveMonitorsForElement(final MonitorRepository monitorRepository,
             final EObject element) {
         final List<Monitor> result = new LinkedList<Monitor>();
@@ -220,7 +232,7 @@ public final class MonitorRepositoryUtil {
             result = checkPCMMeasuringPoints(element, measuringPoint);
 
             if (result == null) {
-                throw new IllegalArgumentException("Unknown measuring point type");
+            	throw new IllegalArgumentException("Unknown measuring point type");
             }
         }
 
@@ -280,7 +292,17 @@ public final class MonitorRepositoryUtil {
                 return this.checkEntryLevelSystemCallMeasuringPoint(element, mp);
             }
 
-            private boolean checkActiveResourceMeasuringPoint(final ActiveResourceMeasuringPoint mp) {
+            @Override
+            public Boolean caseSystemMeasuringPoint(final SystemMeasuringPoint mp) {
+                return this.checkSystemMeasuringPoint(element, mp);
+            }
+            
+			@Override
+            public Boolean caseAssemblyActionMeasuringPoint(final AssemblyActionMeasuringPoint mp) {
+                return this.checkAssemblyActionMeasuringPoint(element, mp);
+            }
+            
+			private boolean checkActiveResourceMeasuringPoint(final ActiveResourceMeasuringPoint mp) {
                 final ProcessingResourceSpecification activeResource = mp.getActiveResource();
 
                 return new ResourceenvironmentSwitch<Boolean>() {
@@ -436,6 +458,14 @@ public final class MonitorRepositoryUtil {
 
                 }.doSwitch(element);
             }
+            
+            private Boolean checkSystemMeasuringPoint(EObject element, SystemMeasuringPoint mp) {
+            	return false;
+			}
+
+            private Boolean checkAssemblyActionMeasuringPoint(EObject element, AssemblyActionMeasuringPoint mp) {
+            	return false;
+            }
 
         }.doSwitch(measuringPoint);
     }
@@ -458,4 +488,5 @@ public final class MonitorRepositoryUtil {
 
         }.doSwitch(measuringPoint);
     }
+    
 }
