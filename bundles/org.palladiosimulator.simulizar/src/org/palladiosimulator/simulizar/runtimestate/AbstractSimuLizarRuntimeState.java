@@ -22,7 +22,6 @@ import org.palladiosimulator.runtimemeasurement.RuntimeMeasurementModel;
 import org.palladiosimulator.runtimemeasurement.RuntimeMeasurementPackage;
 import org.palladiosimulator.simulizar.interpreter.EventNotificationHelper;
 import org.palladiosimulator.simulizar.interpreter.InterpreterDefaultContext;
-
 import org.palladiosimulator.simulizar.interpreter.data.DataContextIDProvider;
 import org.palladiosimulator.simulizar.interpreter.data.IDataContextIDProvider;
 import org.palladiosimulator.simulizar.interpreter.listener.BeginReconfigurationEvent;
@@ -81,7 +80,6 @@ public abstract class AbstractSimuLizarRuntimeState {
     private final List<IModelObserver> modelObservers;
     protected final SimulationCancelationDelegate cancelationDelegate;
     protected final UsageEvolverFacade usageEvolverFacade;
-
     private long numberOfContainers = 0;
     private IDataContextIDProvider dcidProvider;
 
