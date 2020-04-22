@@ -457,16 +457,6 @@ class RDSeffSwitch extends SeffSwitch<Object> implements IComposableSwitch {
                     + acquireAction.getPassiveresource_AcquireAction().getEntityName());
         }
         
-        //TODO: entfernen, debug code
-        try {
-        	List<Long> list = new ArrayList<>();
-        	list.add((long) this.context.getStack().currentStackFrame().getValue("_dcid"));
-			this.context.getStack().currentStackFrame().addValue("_dependenddcid", list);
-			this.context.getStack().currentStackFrame().addValue("_dcid", this.context.getRuntimeState().getDCIDProvider().getNextId());
-		} catch (ValueNotInFrameException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
         return SUCCESS;
     }
 
