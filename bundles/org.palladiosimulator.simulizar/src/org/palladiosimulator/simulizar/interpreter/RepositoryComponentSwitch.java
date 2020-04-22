@@ -127,13 +127,6 @@ public class RepositoryComponentSwitch extends RepositorySwitch<SimulatedStackfr
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-<<<<<<< HEAD
-//        stack.currentStackFrame().addValue("_dependenddcid", oldDCID);
-//        result.addValue("_dependenddcid", oldDCID);
-=======
-        stack.currentStackFrame().addValue("_dependenddcid", oldDCID);
-        result.addValue("_dependenddcid", oldDCID);
->>>>>>> branch 'AddNewMeasuringPoints' of https://github.com/FPersch/Palladio-Analyzer-SimuLizar.git
 
         return result;
     }
