@@ -80,7 +80,6 @@ public abstract class AbstractSimuLizarRuntimeState {
     private final List<IModelObserver> modelObservers;
     protected final SimulationCancelationDelegate cancelationDelegate;
     protected final UsageEvolverFacade usageEvolverFacade;
-
     private long numberOfContainers = 0;
     private IDataContextIDProvider dcidProvider;
 
