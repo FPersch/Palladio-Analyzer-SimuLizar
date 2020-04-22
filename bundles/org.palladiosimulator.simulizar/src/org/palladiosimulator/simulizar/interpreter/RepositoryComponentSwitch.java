@@ -127,8 +127,6 @@ public class RepositoryComponentSwitch extends RepositorySwitch<SimulatedStackfr
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-//        stack.currentStackFrame().addValue("_dependenddcid", oldDCID);
-//        result.addValue("_dependenddcid", oldDCID);
 
         return result;
     }
