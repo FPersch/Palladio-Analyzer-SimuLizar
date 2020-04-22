@@ -22,10 +22,6 @@ import org.palladiosimulator.runtimemeasurement.RuntimeMeasurementModel;
 import org.palladiosimulator.runtimemeasurement.RuntimeMeasurementPackage;
 import org.palladiosimulator.simulizar.interpreter.EventNotificationHelper;
 import org.palladiosimulator.simulizar.interpreter.InterpreterDefaultContext;
-<<<<<<< Upstream, based on upstream/master
-=======
-
->>>>>>> 0dba872 Added dcid handling.
 import org.palladiosimulator.simulizar.interpreter.data.DataContextIDProvider;
 import org.palladiosimulator.simulizar.interpreter.data.IDataContextIDProvider;
 import org.palladiosimulator.simulizar.interpreter.listener.BeginReconfigurationEvent;
