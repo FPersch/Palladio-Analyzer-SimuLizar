@@ -12,6 +12,7 @@ import org.eclipse.emf.common.util.EList;
 import org.eclipse.emf.ecore.util.ComposedSwitch;
 import org.eclipse.emf.ecore.util.Switch;
 import org.palladiosimulator.analyzer.completions.DelegatingExternalCallAction;
+import org.palladiosimulator.commons.eclipseutils.ExtensionHelper;
 import org.palladiosimulator.pcm.allocation.Allocation;
 import org.palladiosimulator.pcm.allocation.AllocationContext;
 import org.palladiosimulator.pcm.core.PCMRandomVariable;
@@ -41,6 +42,7 @@ import org.palladiosimulator.pcm.seff.seff_performance.InfrastructureCall;
 import org.palladiosimulator.pcm.seff.seff_performance.ParametricResourceDemand;
 import org.palladiosimulator.pcm.seff.seff_performance.ResourceCall;
 import org.palladiosimulator.pcm.seff.util.SeffSwitch;
+import org.palladiosimulator.probeframework.measurement.RequestContext;
 import org.palladiosimulator.simulizar.exceptions.PCMModelAccessException;
 import org.palladiosimulator.simulizar.exceptions.PCMModelInterpreterException;
 import org.palladiosimulator.simulizar.exceptions.SimulatedStackAccessException;
@@ -555,15 +557,50 @@ class RDSeffSwitch extends SeffSwitch<Object> implements IComposableSwitch {
                             RDSeffSwitch.this.context.getRuntimeState(), true,
                             RDSeffSwitch.this.context.getLocalPCMModelAtContextCreation());
                     seffContext.getAssemblyContextStack().addAll(parentAssemblyContextStack);
-                    final RDSeffSwitch seffInterpreter = new RDSeffSwitch(seffContext,
-                            RDSeffSwitch.this.basicComponentInstance);
+                    
+                    final String RDSEFFSWITCH_EXTENSION_POINT_ID = "org.palladiosimulator.simulizar.interpreter.rdseffswitch";
+                    final String RDSEFFSWITCH_EXTENSION_ATTRIBUTE = "rdseffswitch";
+                    final List<AbstractRDSeffSwitchFactory> switchFactories = ExtensionHelper
+                    		.getExecutableExtensions(RDSEFFSWITCH_EXTENSION_POINT_ID, RDSEFFSWITCH_EXTENSION_ATTRIBUTE);
+                    
+                    //create interpreter including switches from extension points
+                    final  ExplicitDispatchComposedSwitch<Object> interpreter = new ExplicitDispatchComposedSwitch<Object>();
+                    switchFactories.stream().forEach(s -> interpreter.addSwitch(
+                    		s.createRDSeffSwitch(seffContext, RDSeffSwitch.this.basicComponentInstance, interpreter)));
 
+                    interpreter.addSwitch(new RDSeffSwitch(seffContext, RDSeffSwitch.this.basicComponentInstance, interpreter));
+                    
                     if (LOGGER.isDebugEnabled()) {
                         LOGGER.debug("Created new RDSeff interpreter for " + ((this.isAsync()) ? "asynced" : "synced")
                                 + " forked baviour: " + this);
                     }
+                    
+                    // added DCID handling
+                    long oldDcid = -1L;
+                    try {
+                    	oldDcid = (long) seffContext.getStack().currentStackFrame().getValue("_dcid");
+            		} catch (ValueNotInFrameException e) {
+            			LOGGER.error("Could not find _dcid in current stackframe.", e);
+            		}
+                    
                     // no use of parentSwitch.doSwitch() because we want the inner switches
-                    seffInterpreter.doSwitch(forkedBehaviour);
+                    interpreter.doSwitch(forkedBehaviour);
+                    
+                    long currentDcid = -1L;
+                    try {
+                    	currentDcid = (long) seffContext.getStack().currentStackFrame().getValue("_dcid");
+            		} catch (ValueNotInFrameException e) {
+            			LOGGER.error("Could not find _dcid in current stackframe.", e);
+            		}
+                    if (oldDcid != currentDcid) {
+                    	if (currentDcid != -1L && oldDcid != -1L && oldDcid != currentDcid) {
+                    		RDSeffSwitch.this.context.getStack().currentStackFrame().addValue("_dcid", seffContext.getRuntimeState().getDCIDProvider().getNextId());
+        	            	List<Long> dependendDcids = new ArrayList<>();
+        	            	dependendDcids.add(currentDcid);
+        	            	dependendDcids.add(oldDcid);
+        	            	RDSeffSwitch.this.context.getStack().currentStackFrame().addValue("_dependenddcid", dependendDcids);
+        	            }
+                    }
                 }
 
             });
